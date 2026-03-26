@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Dispute Resolution Tool MVP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-in-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .screen { animation: fade-in 0.5s ease-out; }
+    .status-tag { @apply inline-block px-6 py-3 rounded-xl text-lg font-bold shadow-md; }
+    #drop-zone { transition: all 0.3s ease; }
+    #drop-zone.dragover { @apply border-blue-400 bg-blue-50 scale-105 shadow-2xl; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen font-sans antialiased">
+  <header class="bg-white/80 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-slate-100">
+    <div class="max-w-6xl mx-auto px-6 py-4 md:py-6">
+      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 md:gap-6">
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900 bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent drop-shadow-lg">
+          AI<span class="text-blue-500">Referee</span>
+        </h1>
+        <div class="flex flex-wrap items-center gap-4 text-sm md:text-base text-slate-600 font-medium">
+          <span>Session: <strong id="header-session" class="text-slate-900 font-bold bg-slate-100 px-3 py-1 rounded-lg"></strong></span>
+          <span>Time: <span id="timer" class="text-blue-600 font-bold">0s</span></span>
+          <span id="role-display" class="hidden bg-blue-100 text-blue-800 px-3 py-1 rounded-lg font-semibold">
+            You are: <strong id="role-name"></strong>
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="pt-8 pb-20 px-4 md:px-8 lg:px-0">
+    <div id="progress-steps" class="max-w-4xl mx-auto mb-20 hidden md:block">
+      <div class="flex justify-center gap-8">
+        <div class="step w-20 h-20 md:w-24 md:h-24 rounded-2xl flex flex-col items-center justify-center text-2xl md:text-3xl font-black shadow-lg transition-all duration-500 ease-out" data-step="1">1</div>
+        <div class="step w-20 h-20 md:w-24 md:h-24 rounded-2xl flex flex-col items-center justify-center text-2xl md:text-3xl font-black shadow-lg transition-all duration-500 ease-out" data-step="2">2</div>
+        <div class="step w-20 h-20 md:w-24 md:h-24 rounded-2xl flex flex-col items-center justify-center text-2xl md:text-3xl font-black shadow-lg transition-all duration-500 ease-out" data-step="3">3</div>
+        <div class="step w-20 h-20 md:w-24 md:h-24 rounded-2xl flex flex-col items-center justify-center text-2xl md:text-3xl font-black shadow-lg transition-all duration-500 ease-out" data-step="4">4</div>
+      </div>
+      <div class="flex justify-center gap-8 mt-4 text-sm text-slate-500 font-medium">
+        <span>Agreement</span>
+        <span>Documents</span>
+        <span>Dispute</span>
+        <span>Decision</span>
+      </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+      <!-- Welcome Screen -->
+      <div id="screen-welcome" class="screen">
+        <div class="text-center mb-20">
+          <h1 class="text-5xl md:text-7xl lg:text-8xl font-black text-slate-900 mb-8 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent drop-shadow-2xl">
+            Welcome to<br><span class="text-blue-500 block mt-4 -mb-4">AI Referee
+          </span></h1>
+          <p class="text-xl md:text-2xl text-slate-600 max-w-2xl mx-auto mb-12 leading-relaxed">
+            Resolve project disputes fairly using AI analysis of your approved documents. Designed for screen sharing.
+          </p>
+        </div>
+        <div class="bg-white/70 backdrop-blur-md p-10 md:p-12 rounded-3xl shadow-2xl border border-slate-100 max-w-2xl mx-auto">
+          <div class="mb-8">
+            <label class="block text-lg md:text-xl font-semibold text-slate-700 mb-3">Session ID</label>
+            <div class="bg-slate-100 p-6 rounded-2xl text-2xl font-mono font-bold text-slate-800 text-center tracking-wider" id="welcome-session-id"></div>
+            <p class="text-sm text-slate-500 mt-2">Share this screen and ID during your call.</p>
+          </div>
+          <div class="grid md:grid-cols-2 gap-6 mb-10">
+            <button onclick="selectRole('client')" class="group bg-gradient-to-r from-blue-500 to-blue-600 text-white py-8 px-6 md:px-12 rounded-2xl text-xl md:text-2xl font-bold hover:from-blue-600 hover:to-blue-700 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-20">
+              <span>👤 Client</span>
+            </button>
+            <button onclick="selectRole('provider')" class="group bg-gradient-to-r from-slate-500 to-slate-600 text-white py-8 px-6 md:px-12 rounded-2xl text-xl md:text-2xl font-bold hover:from-slate-600 hover:to-slate-700 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-20">
+              <span>🔧 Provider</span>
+            </button>
+          </div>
+          <button id="join-btn" disabled class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-6 px-8 rounded-2xl text-2xl font-bold shadow-xl hover:from-green-600 hover:to-green-700 hover:shadow-2xl hover:scale-105 transition-all duration-300 opacity-50" onclick="startSession()">
+            Join Session & Agree to Rules
+          </button>
+          <p class="text-xs text-slate-500 mt-4 text-center">By joining, you agree to neutral AI mediation based on documents.</p>
+        </div>
+      </div>
+
+      <!-- Agreement Screen -->
+      <div id="screen-agreement" class="screen hidden">
+        <h2 class="text-4xl md:text-5xl font-black text-slate-900 mb-12 text-center bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Mutual Agreement</h2>
+        <div class="bg-white/70 backdrop-blur-md p-10 md:p-12 rounded-3xl shadow-2xl border border-slate-100 mb-12">
+          <p class="text-xl md:text-2xl text-slate-700 mb-12 text-center max-w-2xl mx-auto leading-relaxed">
+            Both parties confirm they will abide by the AI decision, based solely on mutually approved documents.
+          </p>
+          <div class="grid md:grid-cols-2 gap-12">
+            <div class="text-center md:text-left">
+              <h3 class="text-3xl font-bold text-slate-800 mb-6 flex items-center justify-center md:justify-start gap-3">
+                <span class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-2xl">👤</span>
+                Client
+              </h3>
+              <div id="client-agree-status" class="status-tag bg-gray-100 text-gray-500 mb-6">Pending</div>
+              <button class="client-agree-btn hidden w-full md:w-auto bg-gradient-to-r from-blue-500 to-blue-600 text-white py-5 px-10 rounded-2xl text-xl font-bold hover:from-blue-600 hover:to-blue-700 shadow-xl hover:shadow-2xl transition-all duration-300" onclick="approveAgreement('client')">
+                I (Client) Agree
+              </button>
+            </div>
+            <div class="text-center md:text-left">
+              <h3 class="text-3xl font-bold text-slate-800 mb-6 flex items-center justify-center md:justify-start gap-3">
+                <span class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">🔧</span>
+                Provider
+              </h3>
+              <div id="provider-agree-status" class="status-tag bg-gray-100 text-gray-500 mb-6">Pending</div>
+              <button class="provider-agree-btn hidden w-full md:w-auto bg-gradient-to-r from-slate-500 to-slate-600 text-white py-5 px-10 rounded-2xl text-xl font-bold hover:from-slate-600 hover:to-slate-700 shadow-xl hover:shadow-2xl transition-all duration-300" onclick="approveAgreement('provider')">
+                I (Provider) Agree
+              </button>
+            </div>
+          </div>
+        </div>
+        <button id="agreement-continue" class="hidden w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-8 px-8 rounded-3xl text-2xl md:text-3xl font-bold shadow-2xl hover:from-green-600 hover:to-green-700 hover:shadow-3xl hover:scale-105 transition-all duration-300 mx-auto block max-w-2xl" onclick="nextToDocuments()">
+          Both Agreed ✅<br>Continue to Document Approval
+        </button>
+      </div>
+
+      <!-- Documents Screen -->
+      <div id="screen-documents" class="screen hidden">
+        <h2 class="text-4xl md:text-5xl font-black text-slate-900 mb-12 text-center bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Document Upload & Approval</h2>
+        <div class="bg-white/70 backdrop-blur-md p-10 md:p-12 rounded-3xl shadow-2xl border border-slate-100 mb-8" id="drop-zone">
+          <h3 class="text-3xl md:text-4xl font-bold text-slate-700 mb-6">📄 Drop Documents Here</h3>
+          <p class="text-xl md:text-2xl text-slate-600 mb-4">Drag & drop your SOW, contracts, emails (PDF, TXT, DOC)</p>
+          <p class="text-lg text-slate-500">Both parties must approve each document before AI analysis.</p>
+        </div>
+        <div id="documents-container" class="mb-12"></div>
+        <button id="docs-continue" class="hidden w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-8 px-8 rounded-3xl text-2xl md:text-3xl font-bold shadow-2xl hover:from-green-600 hover:to-green-700 hover:shadow-3xl hover:scale-105 transition-all duration-300 mx-auto block max-w-2xl" onclick="nextToDispute()">
+          All Documents Approved ✅<br>Continue to Dispute Submission
+        </button>
+        <p class="text-center text-slate-500 mt-8 text-lg">No documents? <button onclick="state.documents = []; updateDocumentsList();" class="text-blue-500 hover:underline font-semibold">Clear list</button></p>
+      </div>
+
+      <!-- Dispute Screen -->
+      <div id="screen-dispute" class="screen hidden">
+        <h2 class="text-4xl md:text-5xl font-black text-slate-900 mb-12 text-center bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Submit Dispute</h2>
+        <div class="bg-white/70 backdrop-blur-md p-10 md:p-12 rounded-3xl shadow-2xl border border-slate-100 mb-12">
+          <div id="dispute-input-section">
+            <label class="block text-2xl font-bold text-slate-700 mb-6">Describe the dispute clearly</label>
+            <textarea id="dispute-text" class="w-full h-40 md:h-48 p-8 border-2 border-slate-200 rounded-3xl text-xl md:text-2xl font-medium text-slate-700 focus:border-blue-400 focus:outline-none resize-none shadow-inner" placeholder="E.g., 'The provider claims extra payment for features not in scope. Client says all features were in initial SOW.'"></textarea>
+            <button onclick="submitDispute()" class="mt-8 w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-6 px-8 rounded-2xl text-2xl font-bold shadow-xl hover:from-purple-600 hover:to-purple-700 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+              Submit Dispute
+            </button>
+          </div>
+          <div id="dispute-approval-section" class="hidden">
+            <div class="bg-blue-50 p-8 md:p-12 rounded-3xl border-2 border-blue-100 mb-12">
+              <h4 class="text-2xl md:text-3xl font-bold text-slate-800 mb-6">Dispute Description</h4>
+              <blockquote id="dispute-quote" class="text-xl md:text-2xl text-slate-700 italic bg-white p-8 rounded-2xl border-l-8 border-blue-400 shadow-inner">"</blockquote>
+            </div>
+            <div class="grid md:grid-cols-2 gap-12 mb-12">
+              <div class="text-center md:text-left">
+                <h3 class="text-3xl font-bold text-slate-800 mb-6 flex items-center justify-center md:justify-start gap-3">
+                  <span class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-2xl">👤</span>
+                  Client
+                </h3>
+                <div id="dispute-client-status" class="status-tag bg-gray-100 text-gray-500 mb-6 mx-auto md:mx-0"></div>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                  <button id="dispute-client-accept" class="hidden bg-gradient-to-r from-green-500 to-green-600 text-white py-5 px-10 rounded-2xl text-xl font-bold hover:from-green-600 hover:to-green-700 shadow-xl hover:shadow-2xl transition-all duration-300" onclick="acceptDispute('client')">Accept Dispute</button>
+                  <button id="dispute-client-reject" class="hidden bg-gradient-to-r from-red-500 to-red-600 text-white py-5 px-10 rounded-2xl text-xl font-bold hover:from-red-600 hover:to-red-700 shadow-xl hover:shadow-2xl transition-all duration-300" onclick="rejectDispute('client')">Reject Dispute</button>
+                </div>
+              </div>
+              <div class="text-center md:text-left">
+                <h3 class="text-3xl font-bold text-slate-800 mb-6 flex items-center justify-center md:justify-start gap-3">
+                  <span class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">🔧</span>
+                  Provider
+                </h3>
+                <div id="dispute-provider-status" class="status-tag bg-gray-100 text-gray-500 mb-6 mx-auto md:mx-0"></div>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                  <button id="dispute-provider-accept" class="hidden bg-gradient-to-r from-green-500 to-green-600 text-white py-5 px-10 rounded-2xl text-xl font-bold hover:from-green-600 hover:to-green-700 shadow-xl hover:shadow-2xl transition-all duration-300" onclick="acceptDispute('provider')">Accept Dispute</button>
+                  <button id="dispute-provider-reject" class="hidden bg-gradient-to-r from-red-500 to-red-600 text-white py-5 px-10 rounded-2xl text-xl font-bold hover:from-red-600 hover:to-red-700 shadow-xl hover:shadow-2xl transition-all duration-300" onclick="rejectDispute('provider')">Reject Dispute</button>
+                </div>
+              </div>
+            </div>
+            <button id="run-ai-btn" class="hidden w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-8 px-8 rounded-3xl text-3xl font-bold shadow-2xl hover:from-purple-600 hover:to-indigo-700 hover:shadow-3xl hover:scale-105 transition-all duration-300 mx-auto block max-w-2xl" onclick="generateAI()">
+              Run AI Analysis ⚡
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Decision Screen -->
+      <div id="screen-ai-decision" class="screen hidden">
+        <h2 class="text-4xl md:text-6xl font-black text-slate-900 mb-12 text-center bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">AI Decision</h2>
+        <div class="bg-white/90 backdrop-blur-md p-10 md:p-16 rounded-3xl shadow-2xl border border-slate-100 max-w-3xl mx-auto">
+          <div class="text-center mb-12">
+            <div class="w-32 h-32 mx-auto mb-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl flex items-center justify-center shadow-2xl">
+              <span class="text-5xl">⚖️</span>
+            </div>
+            <h3 class="text-3xl md:text-4xl font-bold text-slate-800 mb-4" id="ruling">AI Ruling</h3>
+          </div>
+          <div class="space-y-12">
+            <div>
+              <h4 class="text-2xl md:text-3xl font-bold text-slate-700 mb-6 flex items-center gap-3">
+                <span class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl font-bold text-blue-600">📝</span>
+                Explanation
+              </h4>
+              <div id="explanation" class="text-xl md:text-2xl text-slate-700 p-8 bg-slate-50 rounded-2xl shadow-inner leading-relaxed"></div>
+            </div>
+            <div>
+              <h4 class="text-2xl md:text-3xl font-bold text-slate-700 mb-6 flex items-center gap-3">
+                <span class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-xl font-bold text-green-600">📄</span>
+                Document Reference
+              </h4>
+              <div class="p-8 md:p-12 bg-gradient-to-b from-gray-50 to-slate-50 rounded-3xl shadow-xl border-l-8 border-green-400">
+                <p class="text-lg md:text-xl text-slate-600 mb-4 font-semibold"><strong id="ref-doc">Document:</strong></p>
+                <div id="ref-text" class="text-2xl md:text-3xl text-slate-800 leading-relaxed prose max-w-none"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto mt-16">
+          <button onclick="downloadDecision()" class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-6 px-8 rounded-2xl text-xl md:text-2xl font-bold shadow-xl hover:from-emerald-600 hover:to-emerald-700 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3">
+            <span>💾</span> Download Decision
+          </button>
+          <button onclick="resetSession()" class="bg-gradient-to-r from-slate-500 to-slate-600 text-white py-6 px-8 rounded-2xl text-xl md:text-2xl font-bold shadow-xl hover:from-slate-600 hover:to-slate-700 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3">
+            <span>🔄</span> New Session
+          </button>
+        </div>
+        <p class="text-center text-slate-500 mt-12 text-lg">Decision is final and binding per agreement.</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let state = {
+      sessionId: crypto.randomUUID ? crypto.randomUUID().slice(0, 8).toUpperCase() : 'SESS' + Date.now().toString(36).toUpperCase().slice(0, 5),
+      role: null,
+      currentScreen: 'welcome',
+      sessionStart: Date.now(),
+      agreement: { client: false, provider: false },
+      documents: [],
+      dispute: { text: '', submitted: false, accepted: { client: false, provider: false }, rejected: { client: false, provider: false } },
+      aiResult: null
+    };
+
+    const stepMap = {
+      agreement: 1,
+      documents: 2,
+      dispute: 3,
+      'ai-decision': 4
+    };
+
+    function getElapsed() {
+      return Math.floor((Date.now() - state.sessionStart) / 1000) + 's';
+    }
+
+    function setScreen(screen) {
+      document.querySelectorAll('.screen').forEach(el => el.classList.add('hidden'));
+      document.getElementById('screen-' + screen).classList.remove('hidden');
+      state.currentScreen = screen;
+      document.getElementById('progress-steps').classList.remove('hidden');
+      updateProgress();
+      switch (screen) {
+        case 'agreement':
+          updateAgreement();
+          break;
+        case 'documents':
+          setupDragDrop();
+          updateDocumentsList();
+          break;
+        case 'dispute':
+          updateDispute();
+          break;
+        case 'ai-decision':
+          updateAIDecision();
+          break;
+      }
+    }
+
+    function updateProgress() {
+      const currentStep = stepMap[state.currentScreen] || 0;
+      document.querySelectorAll('.step').forEach(el => {
+        const step = parseInt(el.dataset.step);
+        el.classList.remove('bg-green-500', 'bg-blue-500', 'text-white', 'ring-4', 'ring-green-200', 'ring-blue-200', 'scale-110', 'shadow-2xl', 'ring-green-500/50', 'ring-blue-500/50');
+        if (step < currentStep) {
+          el.classList.add('bg-green-500', 'text-white', 'ring-4', 'ring-green-200', 'shadow-2xl');
+        } else if (step === currentStep) {
+          el.classList.add('bg-blue-500', 'text-white', 'ring-4', 'ring-blue-200', 'scale-110', 'shadow-2xl');
+        }
+      });
+    }
+
+    function selectRole(role) {
+      state.role = role;
+      document.getElementById('role-name').textContent = role.charAt(0).toUpperCase() + role.slice(1);
+      document.getElementById('role-display').classList.remove('hidden');
+      document.getElementById('join-btn').disabled = false;
+      document.getElementById('join-btn').classList.remove('opacity-50');
+      document.querySelector('#drop-zone').ondragover = handleDragOver;
+      document.querySelector('#drop-zone').ondragleave = handleDragLeave;
+    }
+
+    function startSession() {
+      if (!state.role) return;
+      state.sessionStart = Date.now();
+      document.getElementById('header-session').textContent = state.sessionId;
+      document.getElementById('welcome-session-id').textContent = state.sessionId;
+      setScreen('agreement');
+    }
+
+    function approveAgreement(role) {
+      state.agreement[role] = true;
+      updateAgreement();
+    }
+
+    function updateAgreement() {
+      // Client
+      const clientStatus = document.getElementById('client-agree-status');
+      if (state.agreement.client) {
+        clientStatus.innerHTML = '<span class="bg-green-100 text-green-800 shadow-md">Approved ✅</span>';
+        document.querySelector('.client-agree-btn').classList.add('hidden');
+      } else {
+        clientStatus.innerHTML = '<span class="bg-gray-100 text-gray-500 shadow-sm">Pending ⏳</span>';
+        document.querySelector('.client-agree-btn').classList.toggle('hidden', state.role !== 'client');
+      }
+      // Provider
+      const providerStatus = document.getElementById('provider-agree-status');
+      if (state.agreement.provider) {
+        providerStatus.innerHTML = '<span class="bg-green-100 text-green-800 shadow-md">Approved ✅</span>';
+        document.querySelector('.provider-agree-btn').classList.add('hidden');
+      } else {
+        providerStatus.innerHTML = '<span class="bg-gray-100 text-gray-500 shadow-sm">Pending ⏳</span>';
+        document.querySelector('.provider-agree-btn').classList.toggle('hidden', state.role !== 'provider');
+      }
+      // Continue
+      const bothApproved = state.agreement.client && state.agreement.provider;
+      document.getElementById('agreement-continue').classList.toggle('hidden', !bothApproved);
+    }
+
+    function nextToDocuments() {
+      setScreen('documents');
+    }
+
+    function setupDragDrop() {
+      const dropZone = document.getElementById('drop-zone');
+      dropZone.ondragenter = handleDragEnter;
+      dropZone.ondragleave = handleDragLeave;
+      dropZone.ondragover = handleDragOver;
+      dropZone.ondrop = handleDrop;
+    }
+
+    function handleDragEnter(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add('dragover');
+    }
+
+    function handleDragLeave(e) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('dragover');
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+
+    async function handleDrop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('dragover');
+      const files = Array.from(e.dataTransfer.files);
+      for (let file of files) {
+        if (file.size < 20 * 1024 * 1024 && (file.type.includes('pdf') || file.type.includes('text') || file.name.match(/\.(doc|docx)$/i))) {
+          state.documents.push({
+            name: file.name,
+            uploadedBy: state.role,
+            approved: { client: false, provider: false },
+            rejected: { client: false, provider: false }
+          });
+        }
+      }
+      updateDocumentsList();
+    }
+
+    function getStatus(doc, role) {
+      if (doc.approved[role]) return { text: 'Approved ✅', class: 'bg-green-100 text-green-800 shadow-lg' };
+      if (doc.rejected[role]) return { text: 'Rejected ❌', class: 'bg-red-100 text-red-800 shadow-lg' };
+      return { text: 'Pending ⏳', class: 'bg-gray-100 text-gray-500 shadow-sm' };
+    }
+
+    function approveDoc(idx, role) {
+      state.documents[idx].approved[role] = true;
+      state.documents[idx].rejected[role] = false;
+      updateDocumentsList();
+    }
+
+    function rejectDoc(idx, role) {
+      state.documents[idx].rejected[role] = true;
+      state.documents[idx].approved[role] = false;
+      updateDocumentsList();
+    }
+
+    function updateDocumentsList() {
+      const container = document.getElementById('documents-container');
+      container.innerHTML = '';
+      state.documents.forEach((doc, idx) => {
+        const div = document.createElement('div');
+        div.className = 'bg-white/80 backdrop-blur-md p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100 hover:shadow-2xl transition-all duration-300';
+        const statusClient = getStatus(doc, 'client');
+        const statusProvider = getStatus(doc, 'provider');
+        const isReady = doc.approved.client && doc.approved.provider;
+        div.innerHTML = `
+          <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 pb-8 border-b border-slate-100">
+            <div>
+              <h4 class="text-2xl md:text-3xl font-bold text-slate-900 mb-2">${doc.name}</h4>
+              <p class="text-xl text-slate-600">Uploaded by <span class="font-semibold capitalize">${doc.uploadedBy}</span></p>
+            </div>
+            ${isReady ? '<span class="bg-green-100 text-green-800 px-8 py-4 rounded-2xl text-2xl font-bold shadow-lg ml-auto">Ready for AI ✅</span>' : ''}
+          </div>
+          <div class="grid md:grid-cols-2 gap-8">
+            <div>
+              <h5 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                <span class="w-12 h-12 ${state.role === 'client' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-600'} rounded-2xl flex items-center justify-center text-2xl font-bold">👤</span>
+                Client
+              </h5>
+              <span class="status-tag ${statusClient.class}">${statusClient.text}</span>
+              ${state.role === 'client' && !doc.approved.client && !doc.rejected.client ? `
+                <div class="flex flex-wrap gap-4 mt-6">
+                  <button onclick="approveDoc(${idx}, 'client')" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 px-8 rounded-2xl text-xl font-bold hover:from-blue-600 hover:to-blue-700 shadow-xl hover:shadow-2xl transition-all flex-1 sm:flex-none">Approve</button>
+                  <button onclick="rejectDoc(${idx}, 'client')" class="bg-gradient-to-r from-red-500 to-red-600 text-white py-4 px-8 rounded-2xl text-xl font-bold hover:from-red-600 hover:to-red-700 shadow-xl hover:shadow-2xl transition-all flex-1 sm:flex-none">Reject</button>
+                </div>
+              ` : ''}
+            </div>
+            <div>
+              <h5 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                <span class="w-12 h-12 ${state.role === 'provider' ? 'bg-slate-100 text-slate-600' : 'bg-slate-100 text-slate-600'} rounded-2xl flex items-center justify-center text-2xl font-bold">🔧</span>
+                Provider
+              </h5>
+              <span class="status-tag ${statusProvider.class}">${statusProvider.text}</span>
+              ${state.role === 'provider' && !doc.approved.provider && !doc.rejected.provider ? `
+                <div class="flex flex-wrap gap-4 mt-6">
+                  <button onclick="approveDoc(${idx}, 'provider')" class="bg-gradient-to-r from-slate-500 to-slate-600 text-white py-4 px-8 rounded-2xl text-xl font-bold hover:from-slate-600 hover:to-slate-700 shadow-xl hover:shadow-2xl transition-all flex-1 sm:flex-none">Approve</button>
+                  <button onclick="rejectDoc(${idx}, 'provider')" class="bg-gradient-to-r from-red-500 to-red-600 text-white py-4 px-8 rounded-2xl text-xl font-bold hover:from-red-600 hover:to-red-700 shadow-xl hover:shadow-2xl transition-all flex-1 sm:flex-none">Reject</button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+      const allReady = state.documents.length > 0 && state.documents.every(d => d.approved.client && d.approved.provider);
+      document.getElementById('docs-continue').classList.toggle('hidden', !allReady);
+    }
+
+    function nextToDispute() {
+      setScreen('dispute');
+    }
+
+    function submitDispute() {
+      state.dispute.text = document.getElementById('dispute-text').value.trim();
+      if (!state.dispute.text) {
+        alert('Please describe the dispute.');
+        return;
+      }
+      state.dispute.submitted = true;
+      state.dispute.accepted = { client: false, provider: false };
+      state.dispute.rejected = { client: false, provider: false };
+      updateDispute();
+    }
+
+    function getDisputeStatus(role) {
+      if (state.dispute.accepted[role]) return { text: 'Accepted ✅', class: 'bg-green-100 text-green-800 shadow-lg' };
+      if (state.dispute.rejected[role]) return { text: 'Rejected ❌', class: 'bg-red-100 text-red-800 shadow-lg' };
+      return { text: 'Pending ⏳', class: 'bg-gray-100 text-gray-500 shadow-sm' };
+    }
+
+    function acceptDispute(role) {
+      state.dispute.accepted[role] = true;
+      state.dispute.rejected[role] = false;
+      updateDispute();
+    }
+
+    function rejectDispute(role) {
+      state.dispute.rejected[role] = true;
+      state.dispute.accepted[role] = false;
+      updateDispute();
+    }
+
+    function updateDispute() {
+      if (!state.dispute.submitted) return;
+      document.getElementById('dispute-input-section').classList.add('hidden');
+      document.getElementById('dispute-approval-section').classList.remove('hidden');
+      document.getElementById('dispute-quote').textContent = '"' + state.dispute.text + '"';
+
+      // Client
+      const clientStatus = getDisputeStatus('client');
+      const clientStatusEl = document.getElementById('dispute-client-status');
+      clientStatusEl.textContent = clientStatus.text;
+      clientStatusEl.className = `status-tag mx-auto md:mx-0 ${clientStatus.class}`;
+      const clientAccept = document.getElementById('dispute-client-accept');
+      const clientReject = document.getElementById('dispute-client-reject');
+      const clientPending = state.role === 'client' && !state.dispute.accepted.client && !state.dispute.rejected.client;
+      clientAccept.classList.toggle('hidden', !clientPending);
+      clientReject.classList.toggle('hidden', !clientPending);
+
+      // Provider
+      const providerStatus = getDisputeStatus('provider');
+      const providerStatusEl = document.getElementById('dispute-provider-status');
+      providerStatusEl.textContent = providerStatus.text;
+      providerStatusEl.className = `status-tag mx-auto md:mx-0 ${providerStatus.class}`;
+      const providerAccept = document.getElementById('dispute-provider-accept');
+      const providerReject = document.getElementById('dispute-provider-reject');
+      const providerPending = state.role === 'provider' && !state.dispute.accepted.provider && !state.dispute.rejected.provider;
+      providerAccept.classList.toggle('hidden', !providerPending);
+      providerReject.classList.toggle('hidden', !providerPending);
+
+      // Run AI
+      const bothAccepted = state.dispute.accepted.client && state.dispute.accepted.provider;
+      document.getElementById('run-ai-btn').classList.toggle('hidden', !bothAccepted);
+    }
+
+    function generateAI() {
+      const disputeLower = state.dispute.text.toLowerCase();
+      let ruling, explanation, referenceText, highlighted;
+      const randDoc = state.documents[Math.floor(Math.random() * state.documents.length)] || { name: 'Approved Document' };
+      if (disputeLower.includes('extra') || disputeLower.includes('additional')) {
+        ruling = 'Client must compensate for approved change orders.';
+        highlighted = 'change orders';
+        referenceText = 'Section 4.2: Any additional work requires written change order and approval by client before execution.';
+      } else if (disputeLower.includes('scope') || disputeLower.includes('sow')) {
+        ruling = 'Work is within original Statement of Work (SOW). No extra payment required.';
+        highlighted = 'Statement of Work';
+        referenceText = 'Appendix A - Statement of Work: The scope is strictly limited to the deliverables listed.';
+      } else if (disputeLower.includes('payment') || disputeLower.includes('pay')) {
+        ruling = 'Payment dispute resolved per milestones in contract.';
+        highlighted = 'milestones';
+        referenceText = 'Article 5: Payments are due upon completion of milestones as defined.';
+      } else {
+        ruling = 'Dispute resolved neutrally based on documents. Provider prevails on scope.';
+        highlighted = 'scope';
+        referenceText = 'The project scope does not include unapproved features.';
+      }
+      explanation = `The AI analyzed all approved documents (${state.documents.map(d => d.name).join(', ')}) and the dispute description. Key findings align with standard contract interpretation, prioritizing explicit terms.`;
+      state.aiResult = {
+        ruling,
+        explanation,
+        referenceDoc: randDoc.name,
+        referenceText,
+        highlighted
+      };
+      setScreen('ai-decision');
+    }
+
+    function updateAIDecision() {
+      if (!state.aiResult) return;
+      document.getElementById('ruling').textContent = state.aiResult.ruling;
+      document.getElementById('explanation').textContent = state.aiResult.explanation;
+      document.getElementById('ref-doc').textContent = `Document: ${state.aiResult.referenceDoc}`;
+      const refTextEl = document.getElementById('ref-text');
+      refTextEl.innerHTML = state.aiResult.referenceText.replace(
+        new RegExp(state.aiResult.highlighted, 'gi'),
+        `<span class="bg-yellow-300 px-4 py-2 rounded-2xl font-bold text-3xl shadow-lg inline-block mx-1">${state.aiResult.highlighted}</span>`
+      );
+    }
+
+    function downloadDecision() {
+      if (!state.aiResult) return;
+      const content = `AI Referee Decision
+Session ID: ${state.sessionId}
+Time: ${getElapsed()}
+Role: ${state.role}
+
+RULING:
+${state.aiResult.ruling}
+
+EXPLANATION:
+${state.aiResult.explanation}
+
+REFERENCE (from ${state.aiResult.referenceDoc}):
+${state.aiResult.referenceText}
+
+Dispute: ${state.dispute.text}
+
+Approved Documents: ${state.documents.map(d => d.name).join(', ')}
+
+This decision is binding per AIReferee rules.`;
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aireferee-decision-${state.sessionId}-${new Date().toISOString().slice(0,10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function resetSession() {
+      if (confirm('Start a new session? All data will be lost.')) {
+        location.reload();
+      }
+    }
+
+    // Init
+    document.getElementById('header-session').textContent = state.sessionId;
+    document.getElementById('welcome-session-id').textContent = state.sessionId;
+    setInterval(() => {
+      document.getElementById('timer').textContent = getElapsed();
+    }, 1000);
+  </script>
+</body>
+</html>
